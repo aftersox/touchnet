@@ -38,6 +38,6 @@
 			</div>
 		</div>
 			<!-- load the main script -->
-			<script src="./js/touchnet.02.js"></script>				
+			<script src="./js/touchnet.js"></script>				
 	</body>
 </html>

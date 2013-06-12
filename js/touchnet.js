@@ -4,19 +4,17 @@ var hh = $(window).height(),
 	tool = "none", // currently selected tool
 	d_R = 20, //dot radius
 	ndnew = {}, // new node data object
-	dt = [], // the node data
+	nd = [], // the node data
 	lk = [], // the link data
 	lcurso = {x:0,y:0,active:false,nm:-1}, // used for creating links (link cursor origin)
 	idselect = -1; // the origin of the line cursor
 	
 /*///////// The data
-var dt = [{id: 0, nm: 'p1', xpos: 150, ypos: 150, rr: 20},
+var nd = [{id: 0, nm: 'p1', xpos: 150, ypos: 150, rr: 20},
 	{id: 1, nm: 'p2', xpos: 200, ypos: 200, rr: 30}];
 var lk = [{id: 1, id1: 1, id2: 2, xp1: 0, xp2: 10, yp1: 0, yp2: 10}];
 */
 	
-
-
 // Bind events and what not
 $(document).ready( function() {
 	
@@ -163,11 +161,11 @@ function createNode(coord) {
 
 
 
-function addNode(nd) {
+function addNode(ndnew) {
 	//test if something exists with that name already
-	console.log(nd);
-	if (getNameIndex(nd.nm) === false) {
-		dt.push(nd);
+	console.log(ndnew);
+	if (getNameIndex(ndnew.nm) === false) {
+		nd.push(ndnew);
 		update();
 	} else {
 		console.log('node name already exists');
@@ -178,7 +176,7 @@ function editText(id) {
 	var nnm = $("#t_nodename").val();
 	if( getNameIndex(nnm) === false) {
 		console.log('edit text');
-		dt[getNodeIndex(id)].nm = nnm;
+		nd[getNodeIndex(id)].nm = nnm;
 		update();
 	} else {
 		console.log('node name already exists');
@@ -214,22 +212,22 @@ function dragmove(d) {
 // ID and Indexing
 function getMaxNodeID() {
 	var max = 0;
-	for(var i = 0; i < dt.length; i++) {
-		if (dt[i].id > max)
-			max = dt[i].id;
+	for(var i = 0; i < nd.length; i++) {
+		if (nd[i].id > max)
+			max = nd[i].id;
 	}
 	return max;
 }
 function getNodeIndex(idf) {
-	for(var i = 0; i < dt.length; i++) {
-		if (dt[i].id === idf)
+	for(var i = 0; i < nd.length; i++) {
+		if (nd[i].id === idf)
 			return i;
 	}
 	return false;
 }
 function getNameIndex(nmf) {
-	for(var i = 0; i < dt.length; i++) {
-		if (dt[i].nm === nmf)
+	for(var i = 0; i < nd.length; i++) {
+		if (nd[i].nm === nmf)
 			return i;
 	}
 	return false;
@@ -263,7 +261,7 @@ function update() {
 	//console.log('updating...');
 	////////////// The nodes ///////////////////
 	var ns = svg.selectAll('g.ns')
-		.data(dt, function(d) { return d.id; });
+		.data(nd, function(d) { return d.id; });
 	var nsEnter = ns.enter().insert('g')
 		.attr('class','ns')
 		.attr('transform', function(d) { return('translate('+ d.xpos + ',' + d.ypos + ')');})
@@ -274,7 +272,7 @@ function update() {
 		if(tool === "removeElement") {
 			// remove the node
 			var ix = getNodeIndex(d.id);
-			dt.splice(ix,1);
+			nd.splice(ix,1);
 			// remove edges attached to the node
 			lk1 = [];
 			for(var i = 0; i < lk.length; i++) {
@@ -333,7 +331,7 @@ function update() {
 	ns.exit().remove();
 	
 	// make sure to update the text
-	svg.selectAll('g.ns .ndnm').data(dt)
+	svg.selectAll('g.ns .ndnm').data(nd)
 		.text(function(d) { return d.nm; });
 	
 	////////////// The edges ///////////////////
