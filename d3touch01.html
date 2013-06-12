@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Testing D3 and Touch Dragging</title>
+		<script src="../d3.v3.min.js"></script>
+		<script src="../jquery-1.8.2.min.js"></script>
+		
+	</head>
+	<body>
+		<div id='container'>
+			<div id = 'netspace'>
+			</div>
+		</div>
+		<script>
+			var hh = $(window).height(),
+				ww = $(window).width();
+			
+			var svg = d3.select('#netspace').append('svg:svg')
+				.attr('height',hh)
+				.attr('width',ww)
+				.on('touchstart',makedot)
+				.on('click',mousedot);
+			
+			function makedot(d) {
+				var ts = d3.touches(this);
+				dt.push({nm: 'x0',
+					xpos: ts[0][0],
+					ypos: ts[1][0],
+					rr: 30});
+				update();
+			}
+			
+			function mousedot(d) {
+				var ts = d3.mouse(this);
+				dt.push({nm: 'x0',
+					xpos: ts[0],
+					ypos: ts[1],
+					rr: 30});
+				//console.log(ts[0]);
+				update();	
+			}
+				
+			var drag = d3.behavior.drag()
+				.on('drag',dragmove);
+			
+			
+			//The data
+			var dt = [{nm: 'p1', xpos: 150, ypos: 150, rr: 20},
+				{nm: 'p2', xpos: 200, ypos: 200, rr: 30}];
+				
+			function update() {
+				var ns = svg.selectAll('g.ns')
+					.data(dt);
+				var nsEnter = ns.enter().append('g')
+					.attr('class','ns')
+					.attr('transform', function(d) { return('translate('+ d.xpos + ',' + d.ypos + ')');})
+					.call(drag);
+				
+				nsEnter.append('circle')
+					.attr('class','circ')
+					.style('fill','#AAF')
+					.attr('r',function(d) { return (d.rr); });
+				ns.exit().remove();
+			}
+			update();
+			
+			function dragmove(d) {
+				d3.select(this)
+					.attr('transform', 'translate('+ (d.xpos = d3.event.x) + ',' + (d.xpos = d3.event.y) + ')');
+			}
+				
+		</script>
+	</body>
+</html>
