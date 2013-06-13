@@ -11,9 +11,9 @@ var hh = $(window).height(),
 
 // force directed layout
 var force = d3.layout.force()
-	.charge(-200)
+	.charge(-400)
 	.friction(0.8)
-	.linkDistance(ww/20)
+	.linkDistance(ww/10)
 	.size([ww,hh]);
 
 var nd = force.nodes(),
@@ -262,6 +262,8 @@ function update() {
 	links.exit().remove();
 	
 	/************** The nodes ********************/
+
+	// Note: for dragging objects and making it so the force layout algorithm doesn't start up again: http://jsfiddle.net/trzfw/1/
 	var ns = svg.selectAll('g.ns')
 		.data(nd, function(d) { return d.id; });
 	var nsEnter = ns.enter().insert('g')

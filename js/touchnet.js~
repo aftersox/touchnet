@@ -11,9 +11,9 @@ var hh = $(window).height(),
 
 // force directed layout
 var force = d3.layout.force()
-	.charge(-200)
+	.charge(-400)
 	.friction(0.8)
-	.linkDistance(ww/20)
+	.linkDistance(ww/10)
 	.size([ww,hh]);
 
 var nd = force.nodes(),
@@ -281,14 +281,6 @@ function update() {
 				if ((lk[i]['source'].id == d.id)||(lk[i]['target'].id == d.id)) lk.splice(i,1);
 				else i++;
 			}
-			/*lk1 = [];
-			for(var i = 0; i < lk.length; i++) {
-				if(lk[i].source.id != d.id && lk[i].target.id != d.id) {
-					lk1.push(lk[i]);
-				}
-			}
-			console.log(lk1);
-			lk = lk1;*/
 			update();
 		} else if (tool === "editText") {
 			$("#t_nodename").val(d.nm);
