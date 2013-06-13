@@ -13,8 +13,8 @@ var hh = $(window).height(),
 var force = d3.layout.force()
 	.charge(-200)
 	.friction(0.8)
-	.linkDistance(50)
-	.size([hh,ww]);
+	.linkDistance(ww/20)
+	.size([ww,hh]);
 
 var nd = force.nodes(),
 	lk = force.links();
@@ -22,7 +22,7 @@ var nd = force.nodes(),
 /* Example data
 var nd = [{id: 0, nm: 'p1', xpos: 150, ypos: 150, rr: 20},
 	{id: 1, nm: 'p2', xpos: 200, ypos: 200, rr: 30}];
-var lk = [{id: 1, id1: 1, id2: 2, xp1: 0, xp2: 10, yp1: 0, yp2: 10}];
+var lk = [{source:0, target:1}];
 */
 	
 // build the svg workspace
@@ -193,7 +193,7 @@ function editText(id) {
 	}
 }
 
-// Turn on dragging. While dragging update the position data.
+/* Turn on dragging. While dragging update the position data.
 var drag = d3.behavior.drag()
 	.on('drag',dragmove);
 
@@ -216,7 +216,7 @@ function dragmove(d) {
 	}
 	
 	update();
-}
+}*/
 
 
 // ID and Indexing
@@ -250,9 +250,9 @@ function getMaxEdgeID() {
 	}
 	return max;
 }
-function getEdgeIndex(idf) {
+function getEdgeIndex(sid,tid) {
 	for(var i = 0; i < lk.length; i++) {
-		if (lk[i].id === idf)
+		if (lk[i].source.id == sid && lk[i].target.id == tid)
 			return i;
 	}
 	return false;
@@ -266,27 +266,23 @@ function showWarning(tt,dl) {
 }
 
 
-
-
-
-
-		
+	
 function update() {
 	/************** The edges ********************/
 	
 	var links = svg.selectAll('line.link')
-		.data(lk, function(d) { return d.id; });
+		.data(lk, function(d) { return d.source.id + "-" + d.target.id; });
 	var lkEnter = links.enter().insert('line','g.ns')
 		.attr('class','link')
-		.attr('x1', function(d) { return d.xp1; })
-		.attr('x2', function(d) { return d.xp2; })
-		.attr('y1', function(d) { return d.yp1; })
-		.attr('y2', function(d) { return d.yp2; });
+		.attr('x1', function(d) { return d.source.x; })
+		.attr('x2', function(d) { return d.target.x; })
+		.attr('y1', function(d) { return d.source.y; })
+		.attr('y2', function(d) { return d.target.y; });
 	links.on('click',function(d) {
 		// remove the link
 		if(tool === "removeElement") {
 			// remove the edge
-			var ix = getEdgeIndex(d.id);
+			var ix = getEdgeIndex(d.source.id,d.target.id);
 			lk.splice(ix,1);
 			update();
 		}
@@ -310,7 +306,7 @@ function update() {
 			// remove edges attached to the node
 			lk1 = [];
 			for(var i = 0; i < lk.length; i++) {
-				if(lk[i].id1 != d.id && lk[i].id2 != d.id) {
+				if(lk[i]['source'] != d.id && lk[i]['target'] != d.id) {
 					lk1.push(lk[i]);
 				}
 			}
@@ -320,31 +316,28 @@ function update() {
 			$("#t_nodename").val(d.nm);
 			idselect = d.id;
 			$("#nodeDataEntry").css("display","block");
-			$("#nodeDataEntry").css("top",d.ypos + "px");
-			$("#nodeDataEntry").css("left",d.xpos + "px");
+			$("#nodeDataEntry").css("top",d.y + "px");
+			$("#nodeDataEntry").css("left",d.x + "px");
 		} else if (tool === "addLink") {
 			if(lcurso.active == false) {
+				force.stop(); //stop the force movement while drawing edges
 				// starting a new link
 				lcurso.active = true;
-				lcurso.x = d.xpos;
-				lcurso.y = d.ypos;
+				lcurso.x = d.x;
+				lcurso.y = d.y;
 				lcurso.id = d.id;
 				lcurs.style('display','block');
 			} else if (lcurso.id === d.id) {
+				force.start(); //restart force
 				// they clicked the origin node, cancelling the link
 				lcurso.active = false;
 				lcurso.id = -1;
 				lcurs.style('display','none');
 			} else if (lcurso.active === true && lcurso.id !== d.id) {
+				force.start();
 				// active and they clicked a different node, add a new link
-				lk.push({id: getMaxEdgeID() + 1,
-					id1: lcurso.id,
-					id2: d.id,
-					xp1: lcurso.x,
-					yp1: lcurso.y,
-					xp2: d.xpos,
-					yp2: d.ypos
-					});
+				lk.push({source: getNodeIndex(lcurso.id),
+					target: getNodeIndex(d.id)});
 				lcurso.active = false;
 				lcurso.id = -1;
 				lcurs.style('display','none');
@@ -368,16 +361,8 @@ function update() {
 	svg.selectAll('g.ns .ndnm').data(nd)
 		.text(function(d) { return d.nm; });
 	
-	// update the position of the edges
-	/*svg.selectAll(".link")
-		.attr('x1',function(d) { return(d.xp1);})
-		.attr('x2',function(d) { return(d.xp2);})
-		.attr('y1',function(d) { return(d.yp1);})
-		.attr('y2',function(d) { return(d.yp2);});*/
-	
 	/************** The Force ********************/
 	force.on("tick", function() {
-		console.log('tic toc...');
 		links.attr("x1", function(d) { return d.source.x; })
 			.attr("y1", function(d) { return d.source.y; })
 			.attr("x2", function(d) { return d.target.x; })
