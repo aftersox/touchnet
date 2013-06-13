@@ -4,18 +4,45 @@ var hh = $(window).height(),
 	tool = "none", // currently selected tool
 	d_R = 20, //dot radius
 	ndnew = {}, // new node data object
-	nd = [], // the node data
-	lk = [], // the link data
 	lcurso = {x:0,y:0,active:false,nm:-1}, // used for creating links (link cursor origin)
 	idselect = -1; // the origin of the line cursor
-	
-/*///////// The data
+
+/************* Workspace *****************/
+
+// force directed layout
+var force = d3.layout.force()
+	.charge(-200)
+	.friction(0.8)
+	.linkDistance(50)
+	.size([hh,ww]);
+
+var nd = force.nodes(),
+	lk = force.links();
+
+/* Example data
 var nd = [{id: 0, nm: 'p1', xpos: 150, ypos: 150, rr: 20},
 	{id: 1, nm: 'p2', xpos: 200, ypos: 200, rr: 30}];
 var lk = [{id: 1, id1: 1, id2: 2, xp1: 0, xp2: 10, yp1: 0, yp2: 10}];
 */
 	
-// Bind events and what not
+// build the svg workspace
+var svg = d3.select('#netspace').append('svg:svg')
+	.attr('height',hh)
+	.attr('width',ww)
+	.on('touchstart',toolact) // when a user clicks/touches on the svg space, call a tool action
+	.on('click',toolact)
+	.on('mousemove',linemove);
+	
+// Add the edge cursor
+var lcurs = svg.append('line')
+	.attr('x1',0)
+	.attr('y1',0)
+	.attr('x2',0)
+	.attr('y2',0)
+	.style('stroke','#F00')
+	.style('display','none');
+	
+/*********** Bind events and what not **************/
 $(document).ready( function() {
 	
 		// clicking on a tool button
@@ -80,6 +107,7 @@ $(document).ready( function() {
 	
 	});
 	
+/*********** Form functions **************/
 // Close the node data form
 function closeNodeDataForm() {
 	$("#t_nodename").val("");
@@ -96,25 +124,7 @@ function openNodeDataForm(x,y) {
 }
 
 
-// build the svg workspace
-// when a user clicks on the svg space, call a tool action
 
-var svg = d3.select('#netspace').append('svg:svg')
-	.attr('height',hh)
-	.attr('width',ww)
-	.on('touchstart',toolact)
-	.on('click',toolact)
-	.on('mousemove',linemove);
-	
-// Add the line cursor
-
-var lcurs = svg.append('line')
-	.attr('x1',0)
-	.attr('y1',0)
-	.attr('x2',0)
-	.attr('y2',0)
-	.style('stroke','#F00')
-	.style('display','none');
 
 // When the user selects a tool, set the global tool variable
 
@@ -255,24 +265,48 @@ function showWarning(tt,dl) {
 	
 }
 
+
+
+
+
+
 		
 function update() {
-
-	//console.log('updating...');
-	////////////// The nodes ///////////////////
+	/************** The edges ********************/
+	
+	var links = svg.selectAll('line.link')
+		.data(lk, function(d) { return d.id; });
+	var lkEnter = links.enter().insert('line','g.ns')
+		.attr('class','link')
+		.attr('x1', function(d) { return d.xp1; })
+		.attr('x2', function(d) { return d.xp2; })
+		.attr('y1', function(d) { return d.yp1; })
+		.attr('y2', function(d) { return d.yp2; });
+	links.on('click',function(d) {
+		// remove the link
+		if(tool === "removeElement") {
+			// remove the edge
+			var ix = getEdgeIndex(d.id);
+			lk.splice(ix,1);
+			update();
+		}
+	});
+	links.exit().remove();
+	
+	/************** The nodes ********************/
 	var ns = svg.selectAll('g.ns')
 		.data(nd, function(d) { return d.id; });
 	var nsEnter = ns.enter().insert('g')
 		.attr('class','ns')
 		.attr('transform', function(d) { return('translate('+ d.xpos + ',' + d.ypos + ')');})
-		.call(drag);
+		.call(force.drag);
 	
 	ns.on('click',function(d) {
 		// remove the node
 		if(tool === "removeElement") {
 			// remove the node
 			var ix = getNodeIndex(d.id);
-			nd.splice(ix,1);
+			nd.splice(ix,1); 
 			// remove edges attached to the node
 			lk1 = [];
 			for(var i = 0; i < lk.length; i++) {
@@ -334,33 +368,26 @@ function update() {
 	svg.selectAll('g.ns .ndnm').data(nd)
 		.text(function(d) { return d.nm; });
 	
-	////////////// The edges ///////////////////
-	
-	var links = svg.selectAll('line.link')
-		.data(lk, function(d) { return d.id; });
-	var lkEnter = links.enter().insert('line','g.ns')
-		.attr('class','link')
-		.attr('x1', function(d) { return d.xp1; })
-		.attr('x2', function(d) { return d.xp2; })
-		.attr('y1', function(d) { return d.yp1; })
-		.attr('y2', function(d) { return d.yp2; });
-	links.on('click',function(d) {
-		// remove the link
-		if(tool === "removeElement") {
-			// remove the edge
-			var ix = getEdgeIndex(d.id);
-			lk.splice(ix,1);
-			update();
-		}
-	});
-	links.exit().remove();
-	
-	// update the positio of the edges
-	svg.selectAll(".link")
+	// update the position of the edges
+	/*svg.selectAll(".link")
 		.attr('x1',function(d) { return(d.xp1);})
 		.attr('x2',function(d) { return(d.xp2);})
 		.attr('y1',function(d) { return(d.yp1);})
-		.attr('y2',function(d) { return(d.yp2);});
+		.attr('y2',function(d) { return(d.yp2);});*/
+	
+	/************** The Force ********************/
+	force.on("tick", function() {
+		console.log('tic toc...');
+		links.attr("x1", function(d) { return d.source.x; })
+			.attr("y1", function(d) { return d.source.y; })
+			.attr("x2", function(d) { return d.target.x; })
+			.attr("y2", function(d) { return d.target.y; });
+
+		ns.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+	});
+
+	// start the force direction.
+	force.start();
 	
 }
 update();
